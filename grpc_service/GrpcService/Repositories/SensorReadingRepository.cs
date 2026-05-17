@@ -71,7 +71,9 @@ public class SensorReadingRepository
         return await reader.ReadAsync(cancellationToken) ? MapReading(reader) : null;
     }
 
-    public async Task<SensorReading> CreateAsync(SensorReadingInput input, CancellationToken cancellationToken = default)
+    public async Task<SensorReading> CreateAsync(
+        SensorReadingCreateInput input,
+        CancellationToken cancellationToken = default)
     {
         await using var connection = new NpgsqlConnection(_connectionString);
         await connection.OpenAsync(cancellationToken);
@@ -88,7 +90,7 @@ public class SensorReadingRepository
             RETURNING {Columns}
             """,
             connection);
-        AddInputParameters(command, input);
+        AddCreateParameters(command, input);
 
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         if (!await reader.ReadAsync(cancellationToken))
@@ -99,37 +101,37 @@ public class SensorReadingRepository
         return MapReading(reader);
     }
 
-    public async Task<SensorReading?> UpdateAsync(long id, SensorReadingInput input, CancellationToken cancellationToken = default)
+    public async Task<SensorReading?> UpdateAsync(
+        long id,
+        SensorReadingPatch patch,
+        CancellationToken cancellationToken = default)
     {
+        if (patch.Fields.Count == 0)
+        {
+            throw new ArgumentException("No fields to update");
+        }
+
+        var setClauses = new List<string>();
         await using var connection = new NpgsqlConnection(_connectionString);
         await connection.OpenAsync(cancellationToken);
 
-        await using var command = new NpgsqlCommand(
-            $"""
+        await using var command = new NpgsqlCommand { Connection = connection };
+        var index = 1;
+        foreach (var (column, value) in patch.Fields)
+        {
+            var parameterName = $"p{index}";
+            setClauses.Add($"{column} = @{parameterName}");
+            command.Parameters.AddWithValue(parameterName, value ?? DBNull.Value);
+            index++;
+        }
+
+        command.Parameters.AddWithValue("id", id);
+        command.CommandText = $"""
             UPDATE sensor_readings SET
-                timestamp = @timestamp,
-                device_id = @device_id,
-                location = @location,
-                crop_type = @crop_type,
-                season = @season,
-                temperature = @temperature,
-                humidity = @humidity,
-                rainfall = @rainfall,
-                soil_moisture = @soil_moisture,
-                soil_ph = @soil_ph,
-                light_intensity = @light_intensity,
-                fertilizer_used = @fertilizer_used,
-                irrigation_needed = @irrigation_needed,
-                crop_health = @crop_health,
-                yield_estimate = @yield_estimate,
-                pest_risk = @pest_risk,
-                anomaly_flag = @anomaly_flag
+                {string.Join(", ", setClauses)}
             WHERE id = @id
             RETURNING {Columns}
-            """,
-            connection);
-        AddInputParameters(command, input);
-        command.Parameters.AddWithValue("id", id);
+            """;
 
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         return await reader.ReadAsync(cancellationToken) ? MapReading(reader) : null;
@@ -149,25 +151,25 @@ public class SensorReadingRepository
         return rowsAffected > 0;
     }
 
-    private static void AddInputParameters(NpgsqlCommand command, SensorReadingInput input)
+    private static void AddCreateParameters(NpgsqlCommand command, SensorReadingCreateInput input)
     {
         command.Parameters.AddWithValue("timestamp", input.Timestamp);
         command.Parameters.AddWithValue("device_id", input.DeviceId);
-        command.Parameters.AddWithValue("location", (object?)input.Location ?? DBNull.Value);
-        command.Parameters.AddWithValue("crop_type", (object?)input.CropType ?? DBNull.Value);
-        command.Parameters.AddWithValue("season", (object?)input.Season ?? DBNull.Value);
-        command.Parameters.AddWithValue("temperature", (object?)input.Temperature ?? DBNull.Value);
-        command.Parameters.AddWithValue("humidity", (object?)input.Humidity ?? DBNull.Value);
-        command.Parameters.AddWithValue("rainfall", (object?)input.Rainfall ?? DBNull.Value);
-        command.Parameters.AddWithValue("soil_moisture", (object?)input.SoilMoisture ?? DBNull.Value);
-        command.Parameters.AddWithValue("soil_ph", (object?)input.SoilPh ?? DBNull.Value);
-        command.Parameters.AddWithValue("light_intensity", (object?)input.LightIntensity ?? DBNull.Value);
-        command.Parameters.AddWithValue("fertilizer_used", (object?)input.FertilizerUsed ?? DBNull.Value);
-        command.Parameters.AddWithValue("irrigation_needed", (object?)input.IrrigationNeeded ?? DBNull.Value);
-        command.Parameters.AddWithValue("crop_health", (object?)input.CropHealth ?? DBNull.Value);
-        command.Parameters.AddWithValue("yield_estimate", (object?)input.YieldEstimate ?? DBNull.Value);
-        command.Parameters.AddWithValue("pest_risk", (object?)input.PestRisk ?? DBNull.Value);
-        command.Parameters.AddWithValue("anomaly_flag", (object?)input.AnomalyFlag ?? DBNull.Value);
+        command.Parameters.AddWithValue("location", input.Location);
+        command.Parameters.AddWithValue("crop_type", input.CropType);
+        command.Parameters.AddWithValue("season", input.Season);
+        command.Parameters.AddWithValue("temperature", input.Temperature);
+        command.Parameters.AddWithValue("humidity", input.Humidity);
+        command.Parameters.AddWithValue("rainfall", input.Rainfall);
+        command.Parameters.AddWithValue("soil_moisture", input.SoilMoisture);
+        command.Parameters.AddWithValue("soil_ph", input.SoilPh);
+        command.Parameters.AddWithValue("light_intensity", input.LightIntensity);
+        command.Parameters.AddWithValue("fertilizer_used", input.FertilizerUsed);
+        command.Parameters.AddWithValue("irrigation_needed", input.IrrigationNeeded);
+        command.Parameters.AddWithValue("crop_health", input.CropHealth);
+        command.Parameters.AddWithValue("yield_estimate", input.YieldEstimate);
+        command.Parameters.AddWithValue("pest_risk", input.PestRisk);
+        command.Parameters.AddWithValue("anomaly_flag", input.AnomalyFlag);
     }
 
     private static SensorReading MapReading(NpgsqlDataReader reader)

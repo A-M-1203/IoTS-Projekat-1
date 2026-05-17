@@ -59,12 +59,25 @@ def create_sensor_reading(
 @router.put(
     "/{reading_id}",
     response_model=SensorReadingResponse,
-    summary="Potpuna zamena očitavanja",
+    summary="Delimično ažuriranje očitavanja",
 )
 def update_sensor_reading(
     conn: DbConnection, reading_id: int, payload: SensorReadingUpdate
 ) -> dict:
-    row = repository.update_reading(conn, reading_id, payload)
+    if not payload.model_dump(exclude_unset=True):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Potrebno je poslati bar jedno polje za ažuriranje",
+        )
+
+    try:
+        row = repository.update_reading(conn, reading_id, payload)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+
     if row is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

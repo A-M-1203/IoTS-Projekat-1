@@ -1,7 +1,8 @@
 import {
   columnsToSelectClause,
-  mapInputToDb,
+  mapCreateInputToDb,
   mapRowToGraphQL,
+  mapUpdateInputToDb,
 } from "../utils/fieldSelection.js";
 
 const INSERT_COLUMNS = `
@@ -45,7 +46,7 @@ export async function getReadingById(pool, id, columns) {
 }
 
 export async function createReading(pool, input, columns) {
-  const dbInput = mapInputToDb(input);
+  const dbInput = mapCreateInputToDb(input);
   const values = [
     dbInput.timestamp,
     dbInput.device_id,
@@ -80,50 +81,23 @@ export async function createReading(pool, input, columns) {
 }
 
 export async function updateReading(pool, id, input, columns) {
-  const dbInput = mapInputToDb(input);
-  const values = [
-    dbInput.timestamp,
-    dbInput.device_id,
-    dbInput.location,
-    dbInput.crop_type,
-    dbInput.season,
-    dbInput.temperature,
-    dbInput.humidity,
-    dbInput.rainfall,
-    dbInput.soil_moisture,
-    dbInput.soil_ph,
-    dbInput.light_intensity,
-    dbInput.fertilizer_used,
-    dbInput.irrigation_needed,
-    dbInput.crop_health,
-    dbInput.yield_estimate,
-    dbInput.pest_risk,
-    dbInput.anomaly_flag,
-    id,
-  ];
+  const patch = mapUpdateInputToDb(input);
+  const patchColumns = Object.keys(patch);
+
+  if (patchColumns.length === 0) {
+    throw new Error("No fields to update");
+  }
+
+  const setClauses = patchColumns.map((column, index) => `${column} = $${index + 1}`);
+  const values = patchColumns.map((column) => patch[column]);
+  values.push(id);
 
   const selectClause = columnsToSelectClause(columns);
   const result = await pool.query(
     `
     UPDATE sensor_readings SET
-      timestamp = $1,
-      device_id = $2,
-      location = $3,
-      crop_type = $4,
-      season = $5,
-      temperature = $6,
-      humidity = $7,
-      rainfall = $8,
-      soil_moisture = $9,
-      soil_ph = $10,
-      light_intensity = $11,
-      fertilizer_used = $12,
-      irrigation_needed = $13,
-      crop_health = $14,
-      yield_estimate = $15,
-      pest_risk = $16,
-      anomaly_flag = $17
-    WHERE id = $18
+      ${setClauses.join(", ")}
+    WHERE id = $${values.length}
     RETURNING ${selectClause}
     `,
     values,

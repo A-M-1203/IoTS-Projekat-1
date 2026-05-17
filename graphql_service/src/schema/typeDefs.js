@@ -22,9 +22,29 @@ export const typeDefs = `#graphql
     anomalyFlag: Boolean
   }
 
-  input SensorReadingInput {
+  input SensorReadingCreateInput {
     timestamp: DateTime!
     deviceId: String!
+    location: String!
+    cropType: String!
+    season: String!
+    temperature: Float!
+    humidity: Float!
+    rainfall: Float!
+    soilMoisture: Float!
+    soilPh: Float!
+    lightIntensity: Float!
+    fertilizerUsed: Float!
+    irrigationNeeded: Boolean!
+    cropHealth: String!
+    yieldEstimate: Float!
+    pestRisk: String!
+    anomalyFlag: Boolean!
+  }
+
+  input SensorReadingUpdateInput {
+    timestamp: DateTime
+    deviceId: String
     location: String
     cropType: String
     season: String
@@ -48,8 +68,8 @@ export const typeDefs = `#graphql
   }
 
   type Mutation {
-    createSensorReading(input: SensorReadingInput!): SensorReading!
-    updateSensorReading(id: ID!, input: SensorReadingInput!): SensorReading!
+    createSensorReading(input: SensorReadingCreateInput!): SensorReading!
+    updateSensorReading(id: ID!, input: SensorReadingUpdateInput!): SensorReading!
     deleteSensorReading(id: ID!): Boolean!
   }
 `;

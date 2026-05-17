@@ -1,0 +1,91 @@
+name: iots-projekat-1
+
+services:
+  postgres:
+    image: postgres:18-bookworm
+    container_name: iots-postgres
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vobo1234}
+      POSTGRES_DB: ${DB_NAME:-iots-projekat-1}
+    volumes:
+      - postgres_data:/var/lib/postgresql
+      - ./data-generator/iots-projekat-1.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    ports:
+      - "5432:5432"
+
+  data-generator:
+    build:
+      context: ./data-generator
+    container_name: iots-data-generator
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-iots-projekat-1}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-vobo1234}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  rest_service:
+    build:
+      context: ./rest_service
+    container_name: iots-rest-service
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-iots-projekat-1}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-vobo1234}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      data-generator:
+        condition: service_started
+
+  grpc_service:
+    build:
+      context: ./grpc_service/GrpcService
+    container_name: iots-grpc-service
+    environment:
+      ConnectionStrings__Default: "Host=postgres;Port=5432;Database=${DB_NAME:-iots-projekat-1};Username=${DB_USER:-postgres};Password=${DB_PASSWORD:-vobo1234}"
+      ASPNETCORE_URLS: http://+:8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      data-generator:
+        condition: service_started
+
+  graphql_service:
+    build:
+      context: ./graphql_service
+    container_name: iots-graphql-service
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-iots-projekat-1}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-vobo1234}
+      PORT: 4000
+    ports:
+      - "4000:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      data-generator:
+        condition: service_started
+
+volumes:
+  postgres_data:

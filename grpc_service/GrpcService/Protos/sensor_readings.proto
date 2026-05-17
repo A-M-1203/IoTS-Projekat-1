@@ -27,9 +27,29 @@ message SensorReading {
   optional bool anomaly_flag = 18;
 }
 
-message SensorReadingInput {
+message SensorReadingCreateInput {
   google.protobuf.Timestamp timestamp = 1;
   string device_id = 2;
+  string location = 3;
+  string crop_type = 4;
+  string season = 5;
+  double temperature = 6;
+  double humidity = 7;
+  double rainfall = 8;
+  double soil_moisture = 9;
+  double soil_ph = 10;
+  double light_intensity = 11;
+  double fertilizer_used = 12;
+  bool irrigation_needed = 13;
+  string crop_health = 14;
+  double yield_estimate = 15;
+  string pest_risk = 16;
+  bool anomaly_flag = 17;
+}
+
+message SensorReadingUpdateInput {
+  optional google.protobuf.Timestamp timestamp = 1;
+  optional string device_id = 2;
   optional string location = 3;
   optional string crop_type = 4;
   optional string season = 5;
@@ -61,12 +81,12 @@ message GetSensorReadingRequest {
 }
 
 message CreateSensorReadingRequest {
-  SensorReadingInput reading = 1;
+  SensorReadingCreateInput reading = 1;
 }
 
 message UpdateSensorReadingRequest {
   int64 id = 1;
-  SensorReadingInput reading = 2;
+  SensorReadingUpdateInput reading = 2;
 }
 
 message DeleteSensorReadingRequest {

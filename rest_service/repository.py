@@ -16,8 +16,28 @@ INSERT_COLUMNS = """
     crop_health, yield_estimate, pest_risk, anomaly_flag
 """
 
+FIELD_TO_COLUMN = {
+    "timestamp": "timestamp",
+    "device_id": "device_id",
+    "location": "location",
+    "crop_type": "crop_type",
+    "season": "season",
+    "temperature": "temperature",
+    "humidity": "humidity",
+    "rainfall": "rainfall",
+    "soil_moisture": "soil_moisture",
+    "soil_ph": "soil_ph",
+    "light_intensity": "light_intensity",
+    "fertilizer_used": "fertilizer_used",
+    "irrigation_needed": "irrigation_needed",
+    "crop_health": "crop_health",
+    "yield_estimate": "yield_estimate",
+    "pest_risk": "pest_risk",
+    "anomaly_flag": "anomaly_flag",
+}
 
-def _row_params(data: SensorReadingCreate | SensorReadingUpdate) -> tuple:
+
+def _row_params(data: SensorReadingCreate) -> tuple:
     return (
         data.timestamp,
         data.device_id,
@@ -76,31 +96,29 @@ def create_reading(conn: Connection, data: SensorReadingCreate) -> dict:
 def update_reading(
     conn: Connection, reading_id: int, data: SensorReadingUpdate
 ) -> dict | None:
+    updates = data.model_dump(exclude_unset=True)
+    if not updates:
+        raise ValueError("No fields to update")
+
+    set_clauses = []
+    values = []
+    for field, value in updates.items():
+        column = FIELD_TO_COLUMN[field]
+        set_clauses.append(f"{column} = %s")
+        values.append(value)
+
+    values.append(reading_id)
+    set_sql = ", ".join(set_clauses)
+
     with conn.cursor() as cur:
         cur.execute(
             f"""
             UPDATE sensor_readings SET
-                timestamp = %s,
-                device_id = %s,
-                location = %s,
-                crop_type = %s,
-                season = %s,
-                temperature = %s,
-                humidity = %s,
-                rainfall = %s,
-                soil_moisture = %s,
-                soil_ph = %s,
-                light_intensity = %s,
-                fertilizer_used = %s,
-                irrigation_needed = %s,
-                crop_health = %s,
-                yield_estimate = %s,
-                pest_risk = %s,
-                anomaly_flag = %s
+                {set_sql}
             WHERE id = %s
             RETURNING {COLUMNS}
             """,
-            (*_row_params(data), reading_id),
+            values,
         )
         row = cur.fetchone()
     conn.commit()

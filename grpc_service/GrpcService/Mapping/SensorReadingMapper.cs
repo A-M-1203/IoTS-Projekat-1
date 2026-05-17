@@ -93,7 +93,7 @@ public static class SensorReadingMapper
         return proto;
     }
 
-    public static SensorReadingInput FromProto(Proto.SensorReadingInput proto)
+    public static SensorReadingCreateInput FromCreateProto(Proto.SensorReadingCreateInput proto)
     {
         if (proto.Timestamp is null)
         {
@@ -105,25 +105,117 @@ public static class SensorReadingMapper
             throw new ArgumentException("device_id is required.");
         }
 
-        return new SensorReadingInput
+        return new SensorReadingCreateInput
         {
             Timestamp = proto.Timestamp.ToDateTimeOffset(),
             DeviceId = proto.DeviceId,
-            Location = proto.HasLocation ? proto.Location : null,
-            CropType = proto.HasCropType ? proto.CropType : null,
-            Season = proto.HasSeason ? proto.Season : null,
-            Temperature = proto.HasTemperature ? (decimal)proto.Temperature : null,
-            Humidity = proto.HasHumidity ? (decimal)proto.Humidity : null,
-            Rainfall = proto.HasRainfall ? (decimal)proto.Rainfall : null,
-            SoilMoisture = proto.HasSoilMoisture ? (decimal)proto.SoilMoisture : null,
-            SoilPh = proto.HasSoilPh ? (decimal)proto.SoilPh : null,
-            LightIntensity = proto.HasLightIntensity ? (decimal)proto.LightIntensity : null,
-            FertilizerUsed = proto.HasFertilizerUsed ? (decimal)proto.FertilizerUsed : null,
-            IrrigationNeeded = proto.HasIrrigationNeeded ? proto.IrrigationNeeded : null,
-            CropHealth = proto.HasCropHealth ? proto.CropHealth : null,
-            YieldEstimate = proto.HasYieldEstimate ? (decimal)proto.YieldEstimate : null,
-            PestRisk = proto.HasPestRisk ? proto.PestRisk : null,
-            AnomalyFlag = proto.HasAnomalyFlag ? proto.AnomalyFlag : null,
+            Location = proto.Location,
+            CropType = proto.CropType,
+            Season = proto.Season,
+            Temperature = (decimal)proto.Temperature,
+            Humidity = (decimal)proto.Humidity,
+            Rainfall = (decimal)proto.Rainfall,
+            SoilMoisture = (decimal)proto.SoilMoisture,
+            SoilPh = (decimal)proto.SoilPh,
+            LightIntensity = (decimal)proto.LightIntensity,
+            FertilizerUsed = (decimal)proto.FertilizerUsed,
+            IrrigationNeeded = proto.IrrigationNeeded,
+            CropHealth = proto.CropHealth,
+            YieldEstimate = (decimal)proto.YieldEstimate,
+            PestRisk = proto.PestRisk,
+            AnomalyFlag = proto.AnomalyFlag,
         };
+    }
+
+    public static SensorReadingPatch FromUpdateProto(Proto.SensorReadingUpdateInput proto)
+    {
+        var patch = new SensorReadingPatch();
+
+        if (proto.Timestamp is not null)
+        {
+            patch.Fields["timestamp"] = proto.Timestamp.ToDateTimeOffset();
+        }
+
+        if (proto.HasDeviceId)
+        {
+            patch.Fields["device_id"] = proto.DeviceId;
+        }
+
+        if (proto.HasLocation)
+        {
+            patch.Fields["location"] = proto.Location;
+        }
+
+        if (proto.HasCropType)
+        {
+            patch.Fields["crop_type"] = proto.CropType;
+        }
+
+        if (proto.HasSeason)
+        {
+            patch.Fields["season"] = proto.Season;
+        }
+
+        if (proto.HasTemperature)
+        {
+            patch.Fields["temperature"] = (decimal)proto.Temperature;
+        }
+
+        if (proto.HasHumidity)
+        {
+            patch.Fields["humidity"] = (decimal)proto.Humidity;
+        }
+
+        if (proto.HasRainfall)
+        {
+            patch.Fields["rainfall"] = (decimal)proto.Rainfall;
+        }
+
+        if (proto.HasSoilMoisture)
+        {
+            patch.Fields["soil_moisture"] = (decimal)proto.SoilMoisture;
+        }
+
+        if (proto.HasSoilPh)
+        {
+            patch.Fields["soil_ph"] = (decimal)proto.SoilPh;
+        }
+
+        if (proto.HasLightIntensity)
+        {
+            patch.Fields["light_intensity"] = (decimal)proto.LightIntensity;
+        }
+
+        if (proto.HasFertilizerUsed)
+        {
+            patch.Fields["fertilizer_used"] = (decimal)proto.FertilizerUsed;
+        }
+
+        if (proto.HasIrrigationNeeded)
+        {
+            patch.Fields["irrigation_needed"] = proto.IrrigationNeeded;
+        }
+
+        if (proto.HasCropHealth)
+        {
+            patch.Fields["crop_health"] = proto.CropHealth;
+        }
+
+        if (proto.HasYieldEstimate)
+        {
+            patch.Fields["yield_estimate"] = (decimal)proto.YieldEstimate;
+        }
+
+        if (proto.HasPestRisk)
+        {
+            patch.Fields["pest_risk"] = proto.PestRisk;
+        }
+
+        if (proto.HasAnomalyFlag)
+        {
+            patch.Fields["anomaly_flag"] = proto.AnomalyFlag;
+        }
+
+        return patch;
     }
 }

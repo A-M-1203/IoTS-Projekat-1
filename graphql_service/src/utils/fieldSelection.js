@@ -83,24 +83,46 @@ export function mapRowToGraphQL(row) {
   return result;
 }
 
-export function mapInputToDb(input) {
+export function mapCreateInputToDb(input) {
   return {
     timestamp: new Date(input.timestamp),
     device_id: input.deviceId,
-    location: input.location ?? null,
-    crop_type: input.cropType ?? null,
-    season: input.season ?? null,
-    temperature: input.temperature ?? null,
-    humidity: input.humidity ?? null,
-    rainfall: input.rainfall ?? null,
-    soil_moisture: input.soilMoisture ?? null,
-    soil_ph: input.soilPh ?? null,
-    light_intensity: input.lightIntensity ?? null,
-    fertilizer_used: input.fertilizerUsed ?? null,
-    irrigation_needed: input.irrigationNeeded ?? null,
-    crop_health: input.cropHealth ?? null,
-    yield_estimate: input.yieldEstimate ?? null,
-    pest_risk: input.pestRisk ?? null,
-    anomaly_flag: input.anomalyFlag ?? null,
+    location: input.location,
+    crop_type: input.cropType,
+    season: input.season,
+    temperature: input.temperature,
+    humidity: input.humidity,
+    rainfall: input.rainfall,
+    soil_moisture: input.soilMoisture,
+    soil_ph: input.soilPh,
+    light_intensity: input.lightIntensity,
+    fertilizer_used: input.fertilizerUsed,
+    irrigation_needed: input.irrigationNeeded,
+    crop_health: input.cropHealth,
+    yield_estimate: input.yieldEstimate,
+    pest_risk: input.pestRisk,
+    anomaly_flag: input.anomalyFlag,
   };
+}
+
+const INPUT_FIELD_TO_COLUMN = Object.fromEntries(
+  Object.entries(FIELD_TO_COLUMN).filter(([field]) => field !== "id"),
+);
+
+export function mapUpdateInputToDb(input) {
+  const patch = {};
+
+  for (const [field, column] of Object.entries(INPUT_FIELD_TO_COLUMN)) {
+    if (input[field] === undefined) {
+      continue;
+    }
+
+    if (field === "timestamp") {
+      patch[column] = input.timestamp === null ? null : new Date(input.timestamp);
+    } else {
+      patch[column] = input[field];
+    }
+  }
+
+  return patch;
 }

@@ -91,19 +91,35 @@ export const resolvers = {
 
     async updateSensorReading(_parent, args, context, info) {
       const id = parseNumericId(args.id);
-      const columns = getSelectedColumns(info);
-      const updated = await repository.updateReading(
-        context.pool,
-        id,
-        args.input,
-        columns,
+      const hasFields = Object.keys(args.input).some(
+        (key) => args.input[key] !== undefined,
       );
 
-      if (!updated) {
-        throw notFound(id);
+      if (!hasFields) {
+        throw badUserInput("Potrebno je poslati bar jedno polje za ažuriranje");
       }
 
-      return updated;
+      const columns = getSelectedColumns(info);
+
+      try {
+        const updated = await repository.updateReading(
+          context.pool,
+          id,
+          args.input,
+          columns,
+        );
+
+        if (!updated) {
+          throw notFound(id);
+        }
+
+        return updated;
+      } catch (error) {
+        if (error.message === "No fields to update") {
+          throw badUserInput("Potrebno je poslati bar jedno polje za ažuriranje");
+        }
+        throw error;
+      }
     },
 
     async deleteSensorReading(_parent, args, context) {

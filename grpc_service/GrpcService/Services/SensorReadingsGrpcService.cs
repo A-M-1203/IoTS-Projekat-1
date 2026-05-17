@@ -2,7 +2,6 @@ using Grpc.Core;
 using GrpcService.Mapping;
 using GrpcService.Protos;
 using GrpcService.Repositories;
-using Models = GrpcService.Models;
 
 namespace GrpcService.Services;
 
@@ -70,19 +69,17 @@ public class SensorReadingsGrpcService : SensorReadingService.SensorReadingServi
                 new Status(StatusCode.InvalidArgument, "reading is required."));
         }
 
-        Models.SensorReadingInput input;
         try
         {
-            input = SensorReadingMapper.FromProto(request.Reading);
+            var input = SensorReadingMapper.FromCreateProto(request.Reading);
+            var created = await _repository.CreateAsync(input, context.CancellationToken);
+            _logger.LogInformation("Created sensor reading with id={Id}", created.Id);
+            return SensorReadingMapper.ToProto(created);
         }
         catch (ArgumentException ex)
         {
             throw new RpcException(new Status(StatusCode.InvalidArgument, ex.Message));
         }
-
-        var created = await _repository.CreateAsync(input, context.CancellationToken);
-        _logger.LogInformation("Created sensor reading with id={Id}", created.Id);
-        return SensorReadingMapper.ToProto(created);
     }
 
     public override async Task<Protos.SensorReading> UpdateSensorReading(
@@ -95,24 +92,28 @@ public class SensorReadingsGrpcService : SensorReadingService.SensorReadingServi
                 new Status(StatusCode.InvalidArgument, "reading is required."));
         }
 
-        Models.SensorReadingInput input;
+        var patch = SensorReadingMapper.FromUpdateProto(request.Reading);
+        if (patch.Fields.Count == 0)
+        {
+            throw new RpcException(
+                new Status(StatusCode.InvalidArgument, "At least one field must be provided for update."));
+        }
+
         try
         {
-            input = SensorReadingMapper.FromProto(request.Reading);
+            var updated = await _repository.UpdateAsync(request.Id, patch, context.CancellationToken);
+            if (updated is null)
+            {
+                throw NotFound(request.Id);
+            }
+
+            _logger.LogInformation("Updated sensor reading with id={Id}", request.Id);
+            return SensorReadingMapper.ToProto(updated);
         }
         catch (ArgumentException ex)
         {
             throw new RpcException(new Status(StatusCode.InvalidArgument, ex.Message));
         }
-
-        var updated = await _repository.UpdateAsync(request.Id, input, context.CancellationToken);
-        if (updated is null)
-        {
-            throw NotFound(request.Id);
-        }
-
-        _logger.LogInformation("Updated sensor reading with id={Id}", request.Id);
-        return SensorReadingMapper.ToProto(updated);
     }
 
     public override async Task<DeleteSensorReadingResponse> DeleteSensorReading(

@@ -1,4 +1,5 @@
 import csv
+import os
 import sys
 import time
 from datetime import datetime
@@ -6,11 +7,11 @@ from pathlib import Path
 
 import psycopg
 
-DB_HOST = "localhost"
-DB_PORT = 5432
-DB_NAME = "iots-projekat-1"
-DB_USER = "postgres"
-DB_PASSWORD = "vobo1234"
+DB_HOST = os.getenv("DB_HOST", "localhost")
+DB_PORT = int(os.getenv("DB_PORT", "5432"))
+DB_NAME = os.getenv("DB_NAME", "iots-projekat-1")
+DB_USER = os.getenv("DB_USER", "postgres")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "vobo1234")
 
 BATCH_SIZE = 10
 INTERVAL_SECONDS = 10
