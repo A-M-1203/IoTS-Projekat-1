@@ -163,3 +163,4 @@ coverage/
 *.tgz
 .parcel-cache/
 .cache/
+load_test_summary.json
